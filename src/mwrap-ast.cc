@@ -52,10 +52,10 @@ void init_scalar_types()
 {
     const char* scalar_types[] = {
         "double", "float", 
-        "long", "int", "char", 
-        "ulong", "uint", "uchar",
-        "bool", "size_t", 
-        "mwSize", "mwIndex", "mwSignedIndex", NULL};
+        "longlong", "long", "int", "short", "char", 
+        "ulonglong", "ulong", "uint", "ushort", "uchar",
+	"int32_t", "int64_t", "uint32_t", "uint64_t",
+        "bool", "size_t", "ptrdiff_t", NULL};
 
     for (const char** s = scalar_types; *s; ++s)
         add_scalar_type(*s);
@@ -64,12 +64,72 @@ void init_scalar_types()
 
 char *promote_int(char* name)
 {
-  if( mw_promote_int == true )
+  /* Detect C99 types: int32_t, int64_t, uint32_t, uint64_t */
+  if( strcmp(name,"int32_t") == 0 ) mw_use_int32_t = 1;
+  if( strcmp(name,"int64_t") == 0 ) mw_use_int64_t = 1;
+  if( strcmp(name,"uint32_t") == 0 ) mw_use_uint32_t = 1;
+  if( strcmp(name,"uint64_t") == 0 ) mw_use_uint64_t = 1;
+  if( strcmp(name,"longlong") == 0 ) mw_use_longlong = 1;
+  if( strcmp(name,"ulonglong") == 0 ) mw_use_ulonglong = 1;
+
+  if( strcmp(name,"ulong") == 0 ) mw_use_ulong = 1;
+  if( strcmp(name,"uint") == 0 ) mw_use_uint = 1;
+  if( strcmp(name,"ushort") == 0 ) mw_use_ushort = 1;
+  if( strcmp(name,"uchar") == 0 ) mw_use_uchar = 1;
+
+  /* Promote integers */
+  if( mw_promote_int == 2 )
     {      
-      if( strcmp(name,"int") == 0 ) return strdup("mwSize");
-      if( strcmp(name,"long") == 0 ) return strdup("mwSize");
-      if( strcmp(name,"uint") == 0 ) return strdup("mwSize");
-      if( strcmp(name,"ulong") == 0 ) return strdup("mwSize");
+      if( strcmp(name,"int") == 0 ) return strdup("ptrdiff_t");
+      if( strcmp(name,"long") == 0 ) return strdup("ptrdiff_t");
+      if( strcmp(name,"uint") == 0 ) return strdup("size_t");
+      if( strcmp(name,"ulong") == 0 ) return strdup("size_t");
+    }
+  if( mw_promote_int == 3 )
+    {      
+      if( strcmp(name,"int") == 0 ) return strdup("long");
+      if( strcmp(name,"uint") == 0 ) return strdup("ulong");
+    }
+  if( mw_promote_int == 4 )
+    {      
+      if( strcmp(name,"long") == 0 ) return strdup("longlong");
+      if( strcmp(name,"ulong") == 0 ) return strdup("ulonglong");
+    }
+  if( mw_promote_int == 5 )
+    {      
+      if( strcmp(name,"int") == 0 ) return strdup("long");
+      if( strcmp(name,"long") == 0 ) return strdup("long");
+      if( strcmp(name,"uint") == 0 ) return strdup("ulong");
+      if( strcmp(name,"ulong") == 0 ) return strdup("ulong");
+    }
+  if( mw_promote_int == 6 )
+    {      
+      if( strcmp(name,"int") == 0 ) return strdup("longlong");
+      if( strcmp(name,"long") == 0 ) return strdup("longlong");
+      if( strcmp(name,"uint") == 0 ) return strdup("ulonglong");
+      if( strcmp(name,"ulong") == 0 ) return strdup("ulonglong");
+    }
+  if( mw_promote_int == 7 )
+    {      
+      if( strcmp(name,"int") == 0 ) mw_use_int32_t = 1;
+      if( strcmp(name,"long") == 0 ) mw_use_int64_t = 1;
+      if( strcmp(name,"uint") == 0 ) mw_use_uint32_t = 1;
+      if( strcmp(name,"ulong") == 0 ) mw_use_uint64_t = 1;
+      if( strcmp(name,"int") == 0 ) return strdup("int32_t");
+      if( strcmp(name,"long") == 0 ) return strdup("int32_t");
+      if( strcmp(name,"uint") == 0 ) return strdup("uint64_t");
+      if( strcmp(name,"ulong") == 0 ) return strdup("uint64_t");
+    }
+  if( mw_promote_int == 8 )
+    {      
+      if( strcmp(name,"int") == 0 ) mw_use_int64_t = 1;
+      if( strcmp(name,"long") == 0 ) mw_use_int64_t = 1;
+      if( strcmp(name,"uint") == 0 ) mw_use_uint64_t = 1;
+      if( strcmp(name,"ulong") == 0 ) mw_use_uint64_t = 1;
+      if( strcmp(name,"int") == 0 ) return strdup("int64_t");
+      if( strcmp(name,"long") == 0 ) return strdup("int64_t");
+      if( strcmp(name,"uint") == 0 ) return strdup("uint64_t");
+      if( strcmp(name,"ulong") == 0 ) return strdup("uint64_t");
     }
   return name;
 }
@@ -243,7 +303,7 @@ string id_string(Var* v)
         name += "o ";
     else
         name += "io ";
-    name += v->basetype;
+    name += promote_int(v->basetype);
     name += id_string(v->qual);
     if (v->tinfo == VT_const) {
         name += " ";

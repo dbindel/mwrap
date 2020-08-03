@@ -23,7 +23,17 @@ using std::string;
 bool  mw_generate_catch = false;  // Catch C++ exceptions?
 bool  mw_use_cpp_complex = false; // Use C++ complex types?
 bool  mw_use_c99_complex = false; // Use C99 complex types?
-bool  mw_promote_int = false;     // Convert integer types to mwSize?
+int   mw_promote_int = 0;     // Convert integer types to mwSize?
+int   mw_use_int32_t = 0;     // Use C99 int32_t?
+int   mw_use_int64_t = 0;     // Use C99 int64_t?
+int   mw_use_uint32_t = 0;     // Use C99 uint32_t?
+int   mw_use_uint64_t = 0;     // Use C99 uint64_t?
+int   mw_use_longlong = 0;     // Use long long int?
+int   mw_use_ulonglong = 0;     // Use unsigned long long int?
+int   mw_use_ulong = 0;     // Use unsigned long?
+int   mw_use_uint = 0;     // Use unsigned int?
+int   mw_use_ushort = 0;     // Use unsigned short?
+int   mw_use_uchar = 0;     // Use unsigned char?
 int   listing_flag = 0;           // Output filenames from @ commands?
 int   mbatching_flag = 0;         // Output on @ commands?
 int   linenum = 0;                // Lexer line number
@@ -245,7 +255,7 @@ char* mwrap_strdup(const char* s)
 }
 
 const char* help_string = 
-"mwrap 0.33.3 - MEX file generator for MATLAB and Octave\n"
+"mwrap 0.33.12 - MEX file generator for MATLAB and Octave\n"
 "\n"
 "Syntax:\n"
 "  mwrap [-mex outputmex] [-m output.m] [-c outputmex.c] [-mb]\n"
@@ -257,7 +267,7 @@ const char* help_string =
 "  -mb            -- generate .m files specified with @ redirections\n"
 "  -list          -- list files specified with @ redirections\n"
 "  -catch         -- generate C++ exception handling code\n"
-"  -im            -- convert int, long, uint, and ulong types to mwSize\n"
+"  -i8            -- convert int, long, uint, ulong to int64_t, uint64_t\n"
 "  -c99complex    -- add support code for C99 complex types\n"
 "  -cppcomplex    -- add support code for C++ complex types\n"
 "\n";
@@ -285,8 +295,10 @@ int main(int argc, char** argv)
                 listing_flag = 1;
             if (strcmp(argv[j], "-catch") == 0)
                 mw_generate_catch = true;
-            if (strcmp(argv[j], "-im") == 0)
-                mw_promote_int = true;
+	    if (strcmp(argv[j], "-promote") == 0 && j+1 < argc)
+                mw_promote_int = atoi(argv[j+1]);
+            if (strcmp(argv[j], "-i8") == 0)
+                mw_promote_int = 8;
             if (strcmp(argv[j], "-c99complex") == 0) 
                 mw_use_c99_complex = true;
             if (strcmp(argv[j], "-cppcomplex") == 0) 
@@ -301,12 +313,13 @@ int main(int argc, char** argv)
         for (j = 1; j < argc; ++j) {
             if (strcmp(argv[j], "-m") == 0 ||
                 strcmp(argv[j], "-c") == 0 ||
-                strcmp(argv[j], "-mex") == 0)
+                strcmp(argv[j], "-mex") == 0 ||
+	        strcmp(argv[j], "-promote") == 0)
                 ++j;
             else if (strcmp(argv[j], "-mb") == 0 ||
                      strcmp(argv[j], "-list") == 0 ||
                      strcmp(argv[j], "-catch") == 0 ||
-                     strcmp(argv[j], "-im") == 0 ||
+		     strcmp(argv[j], "-i8") == 0 ||
                      strcmp(argv[j], "-c99complex") == 0 ||
                      strcmp(argv[j], "-cppcomplex") == 0);
             else {
@@ -315,6 +328,8 @@ int main(int argc, char** argv)
                 yyin = fopen(argv[j], "r");
                 if (yyin) {
                     current_ifname = argv[j];
+		    if (outcfp)
+                        print_mex_init(outcfp);
                     err_flag += yyparse();
                     fclose(yyin);
                 } else {
